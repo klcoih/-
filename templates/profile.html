@@ -275,10 +275,16 @@
                                         </span>
                                     </td>
                                     <td>
-                                        {% if h.target == '温度(℃)' %}
+                                        {% if h.target == '温度' %}
                                             <i class="bi bi-thermometer-half text-danger me-1"></i>温度
-                                        {% else %}
+                                        {% elif h.target == '湿度' %}
                                             <i class="bi bi-droplet text-primary me-1"></i>湿度
+                                        {% elif h.target == '风速' %}
+                                            <i class="bi bi-wind text-info me-1"></i>风速
+                                        {% elif h.target == '降水量' %}
+                                            <i class="bi bi-cloud-rain text-secondary me-1"></i>降水量
+                                        {% else %}
+                                            {{ h.target }}
                                         {% endif %}
                                     </td>
                                     <td>

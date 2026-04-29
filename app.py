@@ -19,7 +19,7 @@ from flask import Flask, render_template, request, jsonify, send_file, flash, re
 from functools import wraps
 
 # ========== 导入自定义转换模块 ==========
-from convert_to_csv import process_single_txt_to_csv, parse_txt_data
+from convert_to_csv import process_single_xlsx_to_csv, parse_xlsx_data
 
 # ========== 解决中文乱码 ==========
 plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'WenQuanYi Micro Hei', 'DejaVu Sans']
@@ -221,11 +221,19 @@ def predict_linear(df, target_name, periods=7*24, window=24, save_img_path=None)
         last_window = np.append(last_window[1:], pred)
     last_date = df['ds'].iloc[-1]
     future_dates = pd.date_range(start=last_date + pd.Timedelta(1, unit='h'), periods=periods, freq='h')
-    if target_name == '温度(℃)':
-        predictions = np.clip(predictions, 0, 40)
-        lower = np.clip(predictions - 2, 0, 40)
-        upper = np.clip(predictions + 2, 0, 40)
-    else:
+    if target_name in ['温度', '大气温度']:
+        predictions = np.clip(predictions, -20, 50)
+        lower = np.clip(predictions - 3, -20, 50)
+        upper = np.clip(predictions + 3, -20, 50)
+    elif target_name == '风速':
+        predictions = np.clip(predictions, 0, 30)
+        lower = np.clip(predictions - 2, 0, 30)
+        upper = np.clip(predictions + 2, 0, 30)
+    elif target_name == '降水量':
+        predictions = np.clip(predictions, 0, 100)
+        lower = np.clip(predictions - 5, 0, 100)
+        upper = np.clip(predictions + 5, 0, 100)
+    else:  # 湿度
         predictions = np.clip(predictions, 0, 100)
         lower = np.clip(predictions - 5, 0, 100)
         upper = np.clip(predictions + 5, 0, 100)
@@ -374,30 +382,30 @@ def upload_material():
 @login_required
 def predict_center():
     if request.method == 'POST':
-        target = request.form.get('target', '温度(℃)')
+        target = request.form.get('target', '温度')
         model_choice = request.form.get('model_choice', 'auto')
         uploaded_files = request.files.getlist('files')
         if not uploaded_files or all(f.filename == '' for f in uploaded_files):
-            flash('请至少上传一个 .txt 文件')
+            flash('请至少上传一个 .xlsx 文件')
             return redirect(url_for('predict_center'))
 
         results = []
 
         for uploaded_file in uploaded_files:
-            if not uploaded_file.filename.endswith('.txt'):
-                flash(f'文件 {uploaded_file.filename} 不是 .txt 格式，已跳过')
+            if not uploaded_file.filename.lower().endswith(('.xlsx', '.xls')):
+                flash(f'文件 {uploaded_file.filename} 不是 .xlsx 格式，已跳过')
                 continue
 
             original_filename = uploaded_file.filename
             import uuid
-            temp_filename = f"{uuid.uuid4().hex}.txt"
-            temp_txt_path = os.path.join(app.config['UPLOAD_FOLDER'], temp_filename)
-            uploaded_file.save(temp_txt_path)
+            temp_filename = f"{uuid.uuid4().hex}.xlsx"
+            temp_xlsx_path = os.path.join(app.config['UPLOAD_FOLDER'], temp_filename)
+            uploaded_file.save(temp_xlsx_path)
 
             try:
                 base_name = os.path.splitext(original_filename)[0]
-                csv_path = process_single_txt_to_csv(
-                    temp_txt_path,
+                csv_path = process_single_xlsx_to_csv(
+                    temp_xlsx_path,
                     output_dir=app.config['CSV_FOLDER'],
                     output_filename=base_name
                 )
@@ -439,8 +447,8 @@ def predict_center():
                     'error': str(e)
                 })
             finally:
-                if os.path.exists(temp_txt_path):
-                    os.remove(temp_txt_path)
+                if os.path.exists(temp_xlsx_path):
+                    os.remove(temp_xlsx_path)
 
         # 整体大棚预测
         try:
@@ -742,13 +750,14 @@ def admin_datafiles_delete():
 def admin_datafiles_check(filename):
     filepath = os.path.join(app.config['CSV_FOLDER'], filename)
     try:
-        col_names, kept_rows = parse_txt_data(filepath)
+        df = pd.read_csv(filepath, encoding='utf-8-sig')
+        col_names = list(df.columns)
         return jsonify({
             'status': 'ok',
             'filename': filename,
             'columns': col_names,
-            'valid_records': len(kept_rows),
-            'message': f'清洗后有效记录 {len(kept_rows)} 条'
+            'valid_records': len(df),
+            'message': f'有效记录 {len(df)} 条'
         })
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
@@ -758,7 +767,7 @@ def admin_datafiles_check(filename):
 @operator_required
 def admin_aggregate():
     try:
-        for target in ['温度(℃)', '湿度(%)']:
+        for target in ['温度', '湿度', '风速', '降水量']:
             agg_df = aggregate_sensors_from_dir(app.config['CSV_FOLDER'], target, freq='h')
             cache_path = os.path.join(app.config['OUTPUT_FOLDER'], f'aggregate_{target}.csv')
             agg_df.to_csv(cache_path, index=False, encoding='utf-8-sig')

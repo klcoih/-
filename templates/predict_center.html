@@ -167,7 +167,7 @@
 
 <div class="container mt-4">
     <div class="page-header">
-        <h2><i class="bi bi-cloud-upload me-2"></i>温湿度预测中心</h2>
+        <h2><i class="bi bi-cloud-upload me-2"></i>气象数据预测中心</h2>
     </div>
 
     <!-- 系统数据跨度提示 -->
@@ -205,7 +205,7 @@
                 <!-- 文件上传区域（改良版） -->
                 <div class="mb-4">
                     <label class="form-label">
-                        <i class="bi bi-file-earmark-text"></i> 上传温湿度数据文件 (.txt)
+                        <i class="bi bi-file-earmark-text"></i> 上传气象数据文件 (.xlsx)
                     </label>
                     <div class="file-upload-container">
                         <div class="d-flex align-items-center justify-content-between">
@@ -218,9 +218,9 @@
                                 <i class="bi bi-folder2-open"></i> 选择文件
                             </span>
                         </div>
-                        <p class="text-muted small mt-2 mb-0">支持批量上传 .txt 格式，每个文件独立预测</p>
+                        <p class="text-muted small mt-2 mb-0">支持批量上传 .xlsx 格式，支持温度、湿度、风速、降水量预测</p>
                         <!-- 隐藏的文件输入 -->
-                        <input type="file" name="files" id="fileInput" accept=".txt" multiple style="display: none;" required>
+                        <input type="file" name="files" id="fileInput" accept=".xlsx,.xls" multiple style="display: none;" required>
                     </div>
                     <div class="file-list" id="fileList"></div>
                 </div>
@@ -229,8 +229,10 @@
                     <div class="col-md-6 mb-3">
                         <label class="form-label"><i class="bi bi-bullseye"></i> 预测目标</label>
                         <select name="target" class="form-select">
-                            <option value="温度(℃)">🌡️ 温度 (℃)</option>
-                            <option value="湿度(%)">💧 湿度 (%)</option>
+                            <option value="温度">🌡️ 温度 (℃)</option>
+                            <option value="湿度">💧 湿度 (%)</option>
+                            <option value="风速">💨 风速 (m/s)</option>
+                            <option value="降水量">🌧️ 降水量 (mm)</option>
                         </select>
                     </div>
                     <div class="col-md-6 mb-4">

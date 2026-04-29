@@ -115,7 +115,13 @@
                                 <td><input type="checkbox" name="history_ids" value="{{ h.id }}" class="form-check-input"></td>
                                 <td><i class="bi bi-person-circle text-success me-1"></i>{{ h.user.username if h.user else '未知' }}</td>
                                 <td><span class="text-truncate d-inline-block" style="max-width:150px;" title="{{ h.original_filename }}">{{ h.original_filename }}</span></td>
-                                <td>{% if h.target == '温度(℃)' %}🌡️ 温度{% else %}💧 湿度{% endif %}</td>
+                                <td>
+                                    {% if h.target == '温度' %}🌡️ 温度
+                                    {% elif h.target == '湿度' %}💧 湿度
+                                    {% elif h.target == '风速' %}💨 风速
+                                    {% elif h.target == '降水量' %}🌧️ 降水量
+                                    {% else %}{{ h.target }}{% endif %}
+                                </td>
                                 <td><span class="badge-model">{{ h.model_used[:15] }}</span></td>
                                 <td>{{ h.data_span_days }}天 / {{ h.pred_days }}天</td>
                                 <td>{{ h.created_at.strftime('%m-%d %H:%M') }}</td>
